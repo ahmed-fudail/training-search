@@ -4,39 +4,155 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>بحث البرامج التدريبية للموظفين</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
-  body {
-    font-family: "Noto Naskh Arabic", Arial, sans-serif;
-    background: #f6f7fb;
-    direction: rtl;
-    padding: 20px;
-  }
-  h2 { text-align: center; color: #333; margin-bottom: 15px; }
-  #searchBox {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    margin-bottom: 15px;
-  }
-  .card {
-    background: #fff;
-    border-radius: 10px;
-    padding: 15px; /* زيادة التباعد لتحسين العرض */
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border-right: 4px solid #0077aa; /* إضافة خط جانبي للتمييز */
-  }
-  .card strong { color: #0077aa; display: inline-block; width: 100px; } /* لترتيب العناوين */
-  .status { text-align: center; font-size: 13px; color: #777; margin-bottom: 10px; }
+    /* ------------------ تعريفات الألوان والتدرجات ------------------ */
+    :root {
+      --primary-color: #667eea;
+      --secondary-color: #764ba2;
+      --primary-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      --glass-bg: rgba(255, 255, 255, 0.2);
+      --glass-border: rgba(255, 255, 255, 0.3);
+      --card-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    }
+    
+    /* ------------------ نمط الجسم العام والخلفية ------------------ */
+    body {
+        font-family: 'Cairo', "Noto Naskh Arabic", Arial, sans-serif;
+        direction: rtl;
+        padding: 20px;
+        min-height: 100vh;
+        color: #333;
+        /* خلفية متدرجة متحركة */
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* ------------------ العناوين وحالة التحميل ------------------ */
+    h2 { 
+        text-align: center; 
+        color: #fff; /* لون أبيض للخلفية الداكنة */
+        margin-bottom: 25px; 
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .status { 
+        text-align: center; 
+        font-size: 14px; 
+        color: #fff; 
+        margin-bottom: 20px;
+        font-weight: 600;
+        padding: 10px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 8px;
+    }
+    .status.success {
+        background: rgba(4, 182, 4, 0.7); /* لون أخضر للنجاح */
+    }
+    .status.error {
+        background: rgba(255, 0, 0, 0.7); /* لون أحمر للخطأ */
+    }
+
+    /* ------------------ حقل البحث ------------------ */
+    #searchBox {
+        width: 100%;
+        max-width: 500px; /* لتقييد حجم صندوق البحث */
+        margin: 0 auto 25px auto;
+        display: block;
+        padding: 14px 20px;
+        font-size: 16px;
+        border-radius: 30px; /* شكل دائري أكثر */
+        border: none;
+        background: rgba(255, 255, 255, 0.95); /* خلفية بيضاء شفافة قليلاً */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    #searchBox:focus {
+        outline: none;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    /* ------------------ بطاقات النتائج (Glass Card) ------------------ */
+    .card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px); /* تأثير الزجاج */
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: var(--card-shadow);
+        border: 1px solid var(--glass-border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(31, 38, 135, 0.45);
+    }
+
+    /* شريط التمييز الجانبي */
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 10px;
+        height: 100%;
+        background: var(--primary-gradient); /* شريط ملون بتدرج */
+    }
+
+    /* تنسيق المحتوى داخل البطاقة */
+    .card-content div {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding-right: 15px; /* مسافة للعلامات */
+    }
+    .card-content strong { 
+        color: var(--secondary-color); /* لون بنفسجي لعناوين البيانات */
+        font-weight: 700;
+        min-width: 110px; /* عرض ثابت لترتيب البيانات */
+        display: inline-block;
+    }
+    .card-content span {
+        font-weight: 600;
+        color: #333;
+    }
+    .card-content i {
+        color: var(--primary-color); /* لون أزرق للأيقونات */
+        margin-left: 10px;
+        font-style: normal; /* لإزالة الميلان الافتراضي للأيقونات */
+    }
+
+    /* حالة لا توجد نتائج */
+    #results p {
+        text-align: center;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 10px;
+        font-weight: 600;
+        color: #e73c7e;
+    }
 </style>
 </head>
 <body>
-<h2>🔍 بحث البرامج التدريبية للموظفين</h2>
-<input type="text" id="searchBox" placeholder="اكتب رقم التوظيف أو اسم البرنامج..." />
-<div class="status" id="status">جارٍ تحميل البيانات...</div>
-<div id="results"></div>
+
+<div class="max-w-3xl mx-auto">
+    <h2>🔍 بحث البرامج التدريبية للموظفين</h2>
+    <input type="text" id="searchBox" placeholder="اكتب رقم التوظيف أو اسم البرنامج..." />
+    <div class="status" id="status">جارٍ تحميل البيانات...</div>
+    <div id="results"></div>
+</div>
 
 <script>
 // الرابط يشير إلى ملف 'data.csv' في نفس المستودع
@@ -87,12 +203,15 @@ async function loadData() {
 
     if (allRows.length <= 1) {
         status.textContent = "⚠️ فشل تحميل البيانات: الملف فارغ أو به مشكلة في التنسيق.";
+        status.classList.add('error');
         return;
     }
     
     status.textContent = "✅ تم تحميل " + (allRows.length - 1) + " سجلاً. ابدأ البحث.";
+    status.classList.add('success');
   } catch (err) {
     status.textContent = "❌ حدث خطأ أثناء تحميل البيانات: " + err.message;
+    status.classList.add('error');
   }
 }
 
@@ -108,11 +227,12 @@ function search() {
   let results = [];
 
   // تحديد مؤشرات الأعمدة بناءً على الكلمات المفتاحية في رؤوس الأعمدة
+  // هذا يضمن المرونة في حالة اختلاف اسم العمود قليلاً عن المتوقع
   const indexMap = {
-    'رقم_التوظيف': headers.findIndex(h => h.includes('رقم التوظيف') || h.includes('رقم التامين') || h.includes('رقم')),
+    'رقم_التوظيف': headers.findIndex(h => h.includes('رقم التوظيف') || h.includes('رقم الموظف') || h.includes('رقم')),
     'اسم_المستخدم': headers.findIndex(h => h.includes('اسم المستخدم') || h.includes('اسم الموظف') || h.includes('الاسم')),
     'اسم_البرنامج': headers.findIndex(h => h.includes('اسم البرنامج') || h.includes('البرنامج')),
-    'التاريخ': headers.findIndex(h => h.includes('السنة') || h.includes('التاريخ') || h.includes('عام'))
+    'التاريخ': headers.findIndex(h => h.includes('السنة') || h.includes('التاريخ') || h.includes('عام') || h.includes('تاريخ'))
   };
   
   // تنفيذ البحث
@@ -125,7 +245,11 @@ function search() {
   // البحث باسم البرنامج كخيار افتراضي أو إذا لم يكن رقماً
   else if (indexMap['اسم_البرنامج'] !== -1) {
     searchIndex = indexMap['اسم_البرنامج'];
-  }
+  } else if (indexMap['اسم_المستخدم'] !== -1) {
+        // إذا لم يعثر على عمود البرنامج، يبحث في اسم المستخدم
+    searchIndex = indexMap['اسم_المستخدم'];
+    }
+
 
   if (searchIndex !== -1) {
     const lowerQuery = query.toLowerCase();
@@ -144,12 +268,20 @@ function search() {
     const card = document.createElement('div');
     card.className = 'card';
     
-    // العرض: تم التعديل ليتطابق مع أسماء أعمدتك
+    // استخراج أسماء الأعمدة الفعلية من الخريطة
+    const nameCol = headers[indexMap['اسم_المستخدم']];
+    const idCol = headers[indexMap['رقم_التوظيف']];
+    const programCol = headers[indexMap['اسم_البرنامج']];
+    const dateCol = headers[indexMap['التاريخ']];
+
+    // العرض بتنسيق احترافي
     card.innerHTML = `
-      <strong>الموظف:</strong> ${obj[headers[indexMap['اسم_المستخدم']]] || '-'}<br>
-      <strong>رقم الموظف:</strong> ${obj[headers[indexMap['رقم_التوظيف']]] || '-'}<br>
-      <strong>البرنامج:</strong> ${obj[headers[indexMap['اسم_البرنامج']]] || '-'}<br>
-      <strong>التاريخ:</strong> ${obj[headers[indexMap['التاريخ']]] || '-'}
+        <div class="card-content">
+            <div><i>🧑‍💻</i><strong>الموظف:</strong> <span>${obj[nameCol] || '-'}</span></div>
+            <div><i>🆔</i><strong>رقم التوظيف:</strong> <span>${obj[idCol] || '-'}</span></div>
+            <div><i>📚</i><strong>البرنامج:</strong> <span>${obj[programCol] || '-'}</span></div>
+            <div><i>📅</i><strong>التاريخ/السنة:</strong> <span>${obj[dateCol] || '-'}</span></div>
+        </div>
     `;
     
     resultsDiv.appendChild(card);
