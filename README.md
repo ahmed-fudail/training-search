@@ -23,22 +23,23 @@
   .card {
     background: #fff;
     border-radius: 10px;
-    padding: 12px 15px;
+    padding: 15px; /* زيادة التباعد لتحسين العرض */
     margin-bottom: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-right: 4px solid #0077aa; /* إضافة خط جانبي للتمييز */
   }
-  .card strong { color: #0077aa; }
+  .card strong { color: #0077aa; display: inline-block; width: 100px; } /* لترتيب العناوين */
   .status { text-align: center; font-size: 13px; color: #777; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 <h2>🔍 بحث البرامج التدريبية للموظفين</h2>
-<input type="text" id="searchBox" placeholder="اكتب رقم الموظف أو اسم البرنامج..." />
+<input type="text" id="searchBox" placeholder="اكتب رقم التوظيف أو اسم البرنامج..." />
 <div class="status" id="status">جارٍ تحميل البيانات...</div>
 <div id="results"></div>
 
 <script>
-// تم التعديل: أصبح الرابط يشير إلى ملف 'data.csv' داخل مستودع GitHub
+// الرابط يشير إلى ملف 'data.csv' في نفس المستودع
 const SHEET_CSV_URL = "data.csv"; 
 
 let allRows = [];
@@ -55,11 +56,11 @@ function parseCSV(text) {
         if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
         else inQuotes = !inQuotes;
       } else if (ch === ',' && !inQuotes) {
-        row.push(cur);
+        row.push(cur.trim()); // إضافة trim لتنظيف الفراغات
         cur = '';
       } else cur += ch;
     }
-    row.push(cur);
+    row.push(cur.trim());
     rows.push(row);
   }
   return rows;
@@ -73,20 +74,23 @@ async function loadData() {
     const blob = await resp.blob();
     let text;
     try {
+      // المحاولة الأولى: UTF-8 (الأكثر شيوعاً)
       const decoder = new TextDecoder('utf-8');
       text = decoder.decode(await blob.arrayBuffer());
     } catch(e) {
-      // محاولة فك الترميز بترميز مختلف في حالة فشل UTF-8
+      // المحاولة الثانية: windows-1256 (ترميز عربي شائع)
       const decoder = new TextDecoder('windows-1256'); 
       text = decoder.decode(await blob.arrayBuffer());
     }
+    
     allRows = parseCSV(text);
-    // تم التعديل: لا تقم بالعرض إذا كان هناك صف واحد فقط (العناوين)
+
     if (allRows.length <= 1) {
-        status.textContent = "⚠️ فشل تحميل البيانات أو الملف فارغ.";
+        status.textContent = "⚠️ فشل تحميل البيانات: الملف فارغ أو به مشكلة في التنسيق.";
         return;
     }
-    status.textContent = "✅ تم تحميل " + (allRows.length - 1) + " سجلاً.";
+    
+    status.textContent = "✅ تم تحميل " + (allRows.length - 1) + " سجلاً. ابدأ البحث.";
   } catch (err) {
     status.textContent = "❌ حدث خطأ أثناء تحميل البيانات: " + err.message;
   }
@@ -97,35 +101,38 @@ function search() {
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = '';
 
-  if (!query) return;
+  if (!query || allRows.length <= 1) return;
 
-  // تأكد من وجود بيانات قبل البحث
-  if (allRows.length <= 1) {
-        resultsDiv.innerHTML = "<p>البيانات غير متوفرة للبحث.</p>";
-        return;
-    }
-    
-  const headers = allRows[0];
+  const headers = allRows[0].map(h => h.trim()); // تنظيف رؤوس الأعمدة
   const rows = allRows.slice(1);
   let results = [];
 
-  // البحث عن مؤشرات أسماء الأعمدة (قد تختلف بناءً على ملفك)
+  // تحديد مؤشرات الأعمدة بناءً على الكلمات المفتاحية في رؤوس الأعمدة
   const indexMap = {
-    'رقم_الموظف': headers.findIndex(h => h && h.trim().includes('رقم')),
-    'اسم_البرنامج': headers.findIndex(h => h && h.trim().includes('برنامج'))
+    'رقم_التوظيف': headers.findIndex(h => h.includes('رقم التوظيف') || h.includes('رقم التامين') || h.includes('رقم')),
+    'اسم_المستخدم': headers.findIndex(h => h.includes('اسم المستخدم') || h.includes('اسم الموظف') || h.includes('الاسم')),
+    'اسم_البرنامج': headers.findIndex(h => h.includes('اسم البرنامج') || h.includes('البرنامج')),
+    'التاريخ': headers.findIndex(h => h.includes('السنة') || h.includes('التاريخ') || h.includes('عام'))
   };
-
-  // فحص إذا كان الإدخال رقماً
-  if (/^\d+$/.test(query) && indexMap['رقم_الموظف'] !== -1) {
-    // البحث برقم الموظف
-    const idx = indexMap['رقم_الموظف'];
-    results = rows.filter(r => r[idx] && r[idx].toString().includes(query));
-  } else if (indexMap['اسم_البرنامج'] !== -1) {
-    // البحث باسم البرنامج
-    const idx = indexMap['اسم_البرنامج'];
-    results = rows.filter(r => r[idx] && r[idx].toString().includes(query));
+  
+  // تنفيذ البحث
+  let searchIndex = -1;
+  
+  // البحث برقم التوظيف إذا كان الإدخال رقماً
+  if (/^\d+$/.test(query) && indexMap['رقم_التوظيف'] !== -1) {
+    searchIndex = indexMap['رقم_التوظيف'];
+  } 
+  // البحث باسم البرنامج كخيار افتراضي أو إذا لم يكن رقماً
+  else if (indexMap['اسم_البرنامج'] !== -1) {
+    searchIndex = indexMap['اسم_البرنامج'];
   }
-  
+
+  if (searchIndex !== -1) {
+    const lowerQuery = query.toLowerCase();
+    results = rows.filter(r => r[searchIndex] && r[searchIndex].toString().toLowerCase().includes(lowerQuery));
+  }
+  
+
   if (results.length === 0) {
     resultsDiv.innerHTML = "<p>❌ لا توجد نتائج مطابقة لـ: <strong>" + query + "</strong></p>";
     return;
@@ -136,12 +143,15 @@ function search() {
     headers.forEach((h,i)=> obj[h] = r[i]);
     const card = document.createElement('div');
     card.className = 'card';
+    
+    // العرض: تم التعديل ليتطابق مع أسماء أعمدتك
     card.innerHTML = `
-      <strong>الموظف:</strong> ${obj['اسم الموظف'] || obj['الاسم'] || '-'}<br>
-      <strong>رقم الموظف:</strong> ${obj['رقم الموظف'] || obj['رقم'] || '-'}<br>
-      <strong>البرنامج:</strong> ${obj['اسم البرنامج'] || obj['البرنامج'] || '-'}<br>
-      <strong>التاريخ:</strong> ${obj['تاريخ البرنامج'] || obj['التاريخ'] || '-'}
+      <strong>الموظف:</strong> ${obj[headers[indexMap['اسم_المستخدم']]] || '-'}<br>
+      <strong>رقم الموظف:</strong> ${obj[headers[indexMap['رقم_التوظيف']]] || '-'}<br>
+      <strong>البرنامج:</strong> ${obj[headers[indexMap['اسم_البرنامج']]] || '-'}<br>
+      <strong>التاريخ:</strong> ${obj[headers[indexMap['التاريخ']]] || '-'}
     `;
+    
     resultsDiv.appendChild(card);
   }
 }
